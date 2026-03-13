@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Employee Salary Predictor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      padding: 40px;
+      width: 100%;
+      max-width: 520px;
+    }
+    h1 { font-size: 1.6rem; color: #2d3748; margin-bottom: 4px; }
+    .subtitle { color: #718096; font-size: 0.9rem; margin-bottom: 28px; }
+    label { display: block; font-weight: 600; color: #4a5568; margin-bottom: 6px; font-size: 0.88rem; }
+    input, select {
+      width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0;
+      border-radius: 8px; font-size: 0.95rem; color: #2d3748;
+      transition: border-color .2s;
+      margin-bottom: 18px;
+    }
+    input:focus, select:focus { outline: none; border-color: #667eea; }
+    button {
+      width: 100%; padding: 13px; background: linear-gradient(135deg,#667eea,#764ba2);
+      color: #fff; border: none; border-radius: 8px; font-size: 1rem;
+      font-weight: 700; cursor: pointer; transition: opacity .2s;
+    }
+    button:hover { opacity: .88; }
+    #result {
+      margin-top: 24px; padding: 20px; border-radius: 12px;
+      background: #f0fff4; border: 1.5px solid #68d391; display: none;
+    }
+    #result .big { font-size: 2rem; font-weight: 800; color: #276749; }
+    #result .label { font-size: 0.82rem; color: #276749; margin-top: 2px; }
+    #result .range { margin-top: 10px; font-size: 0.86rem; color: #4a5568; }
+    #error-box {
+      margin-top: 18px; padding: 14px; border-radius: 8px;
+      background: #fff5f5; border: 1.5px solid #fc8181; color: #c53030;
+      font-size: 0.88rem; display: none;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>💼 Salary Predictor</h1>
+  <p class="subtitle">Predict employee salary using machine learning</p>
+
+  <label>Years of Experience</label>
+  <input type="number" id="experience" min="0" max="40" placeholder="e.g. 5" />
+
+  <label>Education Level</label>
+  <select id="education">
+    <option value="0">High School</option>
+    <option value="1" selected>Bachelor's Degree</option>
+    <option value="2">Master's Degree</option>
+    <option value="3">PhD</option>
+  </select>
+
+  <label>Job Role Level</label>
+  <select id="role">
+    <option value="0">Junior</option>
+    <option value="1" selected>Mid-Level</option>
+    <option value="2">Senior</option>
+    <option value="3">Lead / Manager</option>
+  </select>
+
+  <label>Number of Technical Skills</label>
+  <input type="number" id="skills" min="1" max="20" placeholder="e.g. 6" />
+
+  <button onclick="predict()">Predict Salary</button>
+
+  <div id="result">
+    <div class="big" id="salary-val"></div>
+    <div class="label">Predicted Annual Salary (INR)</div>
+    <div class="range" id="range-val"></div>
+  </div>
+  <div id="error-box" id="err-val"></div>
+</div>
+
+<script>
+async function predict() {
+  document.getElementById("result").style.display    = "none";
+  document.getElementById("error-box").style.display = "none";
+
+  const experience   = parseInt(document.getElementById("experience").value);
+  const education    = parseInt(document.getElementById("education").value);
+  const role         = parseInt(document.getElementById("role").value);
+  const skills_count = parseInt(document.getElementById("skills").value);
+
+  if (isNaN(experience) || isNaN(skills_count)) {
+    showError("Please fill in all fields correctly.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/predict", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ experience, education, role, skills_count })
+    });
+    const data = await res.json();
+    if (data.error) { showError(data.error); return; }
+
+    document.getElementById("salary-val").textContent = data.formatted;
+    document.getElementById("range-val").textContent  =
+      `80% Confidence Range: ${data.confidence_range}`;
+    document.getElementById("result").style.display = "block";
+  } catch (e) {
+    showError("Could not connect to the prediction server.");
+  }
+}
+
+function showError(msg) {
+  const box = document.getElementById("error-box");
+  box.textContent = "⚠ " + msg;
+  box.style.display = "block";
+}
+</script>
+</body>
+</html>
